@@ -31,6 +31,16 @@ personal/
 │           ├── 1750232749380.png
 │           └── ...
 ```
+## 啟動服務
+```
+docker compose up -d --build
+```
+
+## 開啟瀏覽器
+```
+http://localhost:3000
+```
+
 ## 🐳 Docker 架構（docker-compose.yml）
 ```yaml
 services:
