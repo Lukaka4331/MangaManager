@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>漫畫瀏覽器</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+    }
+    img {
+      max-width: 90%;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h2 id="comicTitle">漫畫</h2>
+  <div id="pages">載入中...</div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const name = params.get('name');
+    document.getElementById('comicTitle').textContent = name;
+
+    fetch(`/getComic/${name}`)
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById('pages');
+        container.innerHTML = '';  // 清空「載入中...」
+
+        if (!data.pages || data.pages.length === 0) {
+          container.innerHTML = '<p>這本漫畫沒有任何圖片。</p>';
+          return;
+        }
+
+        data.pages.forEach(url => {
+          const img = document.createElement('img');
+          img.src = url;
+          container.appendChild(img);
+        });
+      })
+      .catch(err => {
+        document.getElementById('pages').innerHTML = '<p>載入失敗，請稍後再試。</p>';
+      });
+  </script>
+</body>
+</html>
