@@ -13,10 +13,7 @@ mongoose.connect('mongodb://mongo:27017/comicsDB', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-  .then(() => {
-    console.log('MongoDB 已經連接');
-    initializeExistingComics(); // 啟動時掃描並掛載現有漫畫
-  })
+  .then(() => console.log('MongoDB 已經連接'))
   .catch((err) => console.log('MongoDB 連接失敗:', err));
 
 const comicSchema = new mongoose.Schema({
@@ -35,78 +32,6 @@ function sanitizeName(name) {
   return name.replace(/[<>:"/\\|?*]/g, '').replace(/\s+/g, '_').trim();
 }
 
-// ============ 初始化：掃描並掛載現有漫畫 ============
-async function initializeExistingComics() {
-  const uploadsDir = path.join(__dirname, 'uploads');
-
-  // 確保 uploads 目錄存在
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-    console.log('已建立 uploads 目錄');
-    return;
-  }
-
-  try {
-    const folders = fs.readdirSync(uploadsDir).filter(file => {
-      return fs.statSync(path.join(uploadsDir, file)).isDirectory();
-    });
-
-    console.log(`\n掃描到 ${folders.length} 個漫畫資料夾`);
-
-    for (const folder of folders) {
-      const folderPath = path.join(uploadsDir, folder);
-      
-      // 取得資料夾內的圖片檔案
-      const files = fs.readdirSync(folderPath)
-        .filter(file => /\.(jpg|jpeg|png|gif|webp)$/i.test(file))
-        .sort(); // 按字母順序排序
-
-      if (files.length === 0) {
-        console.log(`⚠️  跳過 "${folder}" - 沒有圖片檔案`);
-        continue;
-      }
-
-      // 檢查該漫畫是否已存在
-      const comicName = folder.replace(/_/g, ' '); // 將底線恢復為空格
-      const existingComic = await Comic.findOne({ folder });
-
-      if (existingComic) {
-        // 更新頁面列表（防止檔案變更未同步）
-        existingComic.pages = files;
-        if (!existingComic.thumbnail || !files.includes(existingComic.thumbnail)) {
-          existingComic.thumbnail = files[0];
-        }
-        await existingComic.save();
-        console.log(`✓ 更新 "${comicName}" (${files.length} 頁)`);
-      } else {
-        // 新增漫畫記錄
-        const newComic = new Comic({
-          name: comicName,
-          folder: folder,
-          pages: files,
-          thumbnail: files[0]
-        });
-        await newComic.save();
-        console.log(`✓ 掛載 "${comicName}" (${files.length} 頁)`);
-      }
-    }
-
-    console.log('\n✅ 漫畫初始化完成\n');
-  } catch (err) {
-    console.error('初始化漫畫失敗:', err);
-  }
-}
-
-// ============ 手動掃描 API（可選） ============
-app.post('/rescanComics', async (req, res) => {
-  try {
-    await initializeExistingComics();
-    res.json({ message: '重新掃描完成' });
-  } catch (err) {
-    res.status(500).json({ message: '掃描失敗' });
-  }
-});
-
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const comicName = req.body.name;
@@ -123,6 +48,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+// 上傳漫畫
 app.post('/uploadComic', upload.array('images'), async (req, res) => {
   try {
     const { name } = req.body;
@@ -146,6 +72,7 @@ app.post('/uploadComic', upload.array('images'), async (req, res) => {
   }
 });
 
+// 列出所有漫畫名稱 - 返回縮圖資訊
 app.get('/listComics', async (req, res) => {
   try {
     const comics = await Comic.find({}, 'name folder thumbnail pages');
@@ -167,6 +94,7 @@ app.get('/listComics', async (req, res) => {
   }
 });
 
+// 取得指定漫畫資料
 app.get('/getComic/:name', async (req, res) => {
   const comicName = decodeURIComponent(req.params.name);
 
@@ -183,6 +111,7 @@ app.get('/getComic/:name', async (req, res) => {
   }
 });
 
+// 設定縮圖為特定頁面
 app.post('/setThumbnailPage/:name', async (req, res) => {
   const comicName = decodeURIComponent(req.params.name);
   const { pageIndex } = req.body;
@@ -208,6 +137,7 @@ app.post('/setThumbnailPage/:name', async (req, res) => {
   }
 });
 
+// 刪除漫畫
 app.delete('/deleteComic/:name', async (req, res) => {
   const comicName = decodeURIComponent(req.params.name);
 

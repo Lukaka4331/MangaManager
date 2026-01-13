@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>漫畫上傳與列表</title>
+</head>
+<body>
+  <h2>📤 上傳漫畫</h2>
+  <form id="uploadForm" enctype="multipart/form-data">
+    名稱：<input type="text" name="name" required><br>
+    選擇圖片：<input type="file" name="images" multiple accept="image/*"><br>
+    <button type="submit">上傳</button>
+  </form>
+  <div id="preview"></div>
+  <hr>
+
+  <h2>📚 所有漫畫列表</h2>
+  <ul id="comicList"></ul>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const preview = document.getElementById('preview');
+    const comicList = document.getElementById('comicList');
+
+    // 預覽圖
+    form.images.addEventListener('change', () => {
+      preview.innerHTML = '';
+      Array.from(form.images.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.style.width = '120px';
+          img.style.margin = '5px';
+          preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    // 上傳表單送出
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const res = await fetch('/uploadComic', {
+        method: 'POST',
+        body: formData
+      });
+      const msg = await res.json();
+      alert(msg.message);
+      form.reset();
+      preview.innerHTML = '';
+      loadComics();
+    });
+
+    // 載入所有漫畫
+    async function loadComics() {
+      //const res = await fetch('/getAllComics');
+      const res = await fetch('/listComics');
+      const comics = await res.json();
+      comicList.innerHTML = '';
+      comics.forEach(comic => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <a href="/viewer.html?name=${comic.name}" target="_blank">${comic.name}</a>
+          <button onclick="deleteComic('${comic.name}')">刪除</button>
+        `;
+        comicList.appendChild(li);
+      });
+    }
+
+    // 刪除漫畫
+    async function deleteComic(name) {
+      if (!confirm(`確定刪除漫畫 "${name}"？`)) return;
+      const res = await fetch(`/deleteComic/${name}`, { method: 'DELETE' });
+      const msg = await res.json();
+      alert(msg.message);
+      loadComics();
+    }
+
+    loadComics();
+  </script>
+</body>
+</html>

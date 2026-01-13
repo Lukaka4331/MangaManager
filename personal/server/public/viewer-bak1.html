@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>漫畫瀏覽器</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Microsoft YaHei', '微軟正黑體', sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .viewer-container {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .header-title {
+      font-size: 1.3em;
+      font-weight: 600;
+    }
+
+    .header-progress {
+      font-size: 0.9em;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9em;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      background: rgba(255,255,255,0.2);
+      color: white;
+    }
+
+    button:hover {
+      background: rgba(255,255,255,0.3);
+      transform: translateY(-2px);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .main-content::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .main-content::-webkit-scrollbar-track {
+      background: #333;
+    }
+
+    .main-content::-webkit-scrollbar-thumb {
+      background: #667eea;
+      border-radius: 4px;
+    }
+
+    .main-content::-webkit-scrollbar-thumb:hover {
+      background: #764ba2;
+    }
+
+    .page-container {
+      text-align: center;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    img {
+      max-width: 100%;
+      max-height: calc(100vh - 120px);
+      object-fit: contain;
+      border-radius: 4px;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    }
+
+    .page-label {
+      margin-top: 10px;
+      font-size: 0.95em;
+      color: #999;
+    }
+
+    .loading {
+      font-size: 1.2em;
+      color: #999;
+    }
+
+    .loading span {
+      display: inline-block;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .error {
+      color: #ff6b6b;
+      font-size: 1.1em;
+    }
+
+    footer {
+      background: #2a2a2a;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    .nav-buttons button {
+      min-width: 80px;
+    }
+
+    .keyboard-hint {
+      font-size: 0.8em;
+      color: #999;
+      text-align: center;
+    }
+
+    .progress-bar {
+      height: 3px;
+      background: #444;
+      border-radius: 2px;
+      overflow: hidden;
+      margin: 0 20px;
+      flex: 1;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .fullscreen-btn {
+      cursor: pointer;
+    }
+
+    .tooltip {
+      position: relative;
+    }
+
+    .tooltip:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333;
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 0.8em;
+      white-space: nowrap;
+      z-index: 1000;
+    }
+
+    .tooltip:hover::before {
+      content: '';
+      position: absolute;
+      bottom: 115%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: #333;
+      z-index: 1000;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #2a2a2a;
+      padding: 30px;
+      border-radius: 8px;
+      max-width: 500px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+
+    .modal-content h2 {
+      margin-bottom: 20px;
+      color: #667eea;
+    }
+
+    .modal-content p {
+      margin: 10px 0;
+      color: #ccc;
+    }
+
+    .modal-content ul {
+      margin: 15px 0;
+      margin-left: 20px;
+    }
+
+    .modal-content li {
+      margin: 8px 0;
+      color: #ccc;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .modal-buttons button {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="viewer-container">
+    <!-- 頂部導航 -->
+    <header>
+      <div class="header-left">
+        <button class="tooltip" data-tooltip="返回首頁" onclick="goHome()">⬅️ 返回</button>
+        <div>
+          <div class="header-title" id="comicTitle">載入中...</div>
+          <div class="header-progress">
+            <span id="currentPage">1</span> / <span id="totalPages">1</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-controls">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressBar"></div>
+        </div>
+        <button class="tooltip" data-tooltip="鍵盤說明 (H)" id="helpBtn" onclick="showHelp()">❓</button>
+        <button class="tooltip" data-tooltip="全屏 (F)" class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">🖥️</button>
+      </div>
+    </header>
+
+    <!-- 主內容 -->
+    <div class="main-content" id="mainContent">
+      <div class="loading">
+        <span>⏳</span> 載入漫畫中...
+      </div>
+    </div>
+
+    <!-- 底部導航 -->
+    <footer>
+      <div class="nav-buttons">
+        <button id="prevBtn" class="tooltip" data-tooltip="上一頁 (← 或 A)" onclick="prevPage()">⬅️ 上一頁</button>
+        <button id="nextBtn" class="tooltip" data-tooltip="下一頁 (→ 或 D)" onclick="nextPage()">下一頁 ➡️</button>
+      </div>
+      <div class="keyboard-hint">💡 按 H 查看快捷鍵</div>
+    </footer>
+  </div>
+
+  <!-- 幫助對話框 -->
+  <div class="modal" id="helpModal">
+    <div class="modal-content">
+      <h2>⌨️ 快捷鍵說明</h2>
+      <ul>
+        <li><strong>← 或 A</strong> - 上一頁</li>
+        <li><strong>→ 或 D</strong> - 下一頁</li>
+        <li><strong>Home</strong> - 第一頁</li>
+        <li><strong>End</strong> - 最後一頁</li>
+        <li><strong>F</strong> - 全屏</li>
+        <li><strong>H</strong> - 顯示幫助</li>
+        <li><strong>Esc</strong> - 關閉幫助</li>
+      </ul>
+      <div class="modal-buttons">
+        <button onclick="closeHelp()">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentPage = 0;
+    let pages = [];
+    const params = new URLSearchParams(window.location.search);
+    const comicName = params.get('name');
+
+    const mainContent = document.getElementById('mainContent');
+    const comicTitle = document.getElementById('comicTitle');
+    const currentPageSpan = document.getElementById('currentPage');
+    const totalPagesSpan = document.getElementById('totalPages');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const progressBar = document.getElementById('progressBar');
+    const helpModal = document.getElementById('helpModal');
+
+    // 載入漫畫
+    async function loadComic() {
+      try {
+        const res = await fetch(`/getComic/${encodeURIComponent(comicName)}`);
+        if (!res.ok) throw new Error('載入失敗');
+        
+        const data = await res.json();
+        pages = data.pages || [];
+        comicTitle.textContent = data.name;
+        totalPagesSpan.textContent = pages.length;
+
+        if (pages.length === 0) {
+          mainContent.innerHTML = '<div class="error">這本漫畫沒有圖片</div>';
+          return;
+        }
+
+        currentPage = 0;
+        displayPage();
+      } catch (err) {
+        console.error('載入錯誤:', err);
+        mainContent.innerHTML = '<div class="error">❌ 載入漫畫失敗，請重新整理頁面</div>';
+      }
+    }
+
+    function displayPage() {
+      if (pages.length === 0) return;
+
+      mainContent.innerHTML = `
+        <div class="page-container">
+          <img src="${pages[currentPage]}" alt="第 ${currentPage + 1} 頁" onerror="handleImageError()">
+          <div class="page-label">第 ${currentPage + 1} 頁，共 ${pages.length} 頁</div>
+        </div>
+      `;
+
+      currentPageSpan.textContent = currentPage + 1;
+      updateProgress();
+      updateButtons();
+    }
+
+    function updateProgress() {
+      const progress = ((currentPage + 1) / pages.length) * 100;
+      progressBar.style.width = progress + '%';
+    }
+
+    function updateButtons() {
+      prevBtn.disabled = currentPage === 0;
+      nextBtn.disabled = currentPage === pages.length - 1;
+    }
+
+    function handleImageError() {
+      mainContent.innerHTML = '<div class="error">❌ 圖片載入失敗</div>';
+    }
+
+    function nextPage() {
+      if (currentPage < pages.length - 1) {
+        currentPage++;
+        displayPage();
+      }
+    }
+
+    function prevPage() {
+      if (currentPage > 0) {
+        currentPage--;
+        displayPage();
+      }
+    }
+
+    function goToFirstPage() {
+      currentPage = 0;
+      displayPage();
+    }
+
+    function goToLastPage() {
+      currentPage = pages.length - 1;
+      displayPage();
+    }
+
+    function goHome() {
+      window.location.href = '/';
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    function showHelp() {
+      helpModal.classList.add('active');
+    }
+
+    function closeHelp() {
+      helpModal.classList.remove('active');
+    }
+
+    // 鍵盤快捷鍵
+    document.addEventListener('keydown', (e) => {
+      switch(e.key) {
+        case 'ArrowRight':
+        case 'd':
+        case 'D':
+          nextPage();
+          break;
+        case 'ArrowLeft':
+        case 'a':
+        case 'A':
+          prevPage();
+          break;
+        case 'Home':
+          goToFirstPage();
+          break;
+        case 'End':
+          goToLastPage();
+          break;
+        case 'f':
+        case 'F':
+          toggleFullscreen();
+          break;
+        case 'h':
+        case 'H':
+          showHelp();
+          break;
+        case 'Escape':
+          closeHelp();
+          break;
+      }
+    });
+
+    // 點擊幫助框外區域關閉
+    helpModal.addEventListener('click', (e) => {
+      if (e.target === helpModal) {
+        closeHelp();
+      }
+    });
+
+    loadComic();
+  </script>
+</body>
+</html>

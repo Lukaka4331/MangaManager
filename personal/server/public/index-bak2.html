@@ -238,7 +238,6 @@
       overflow: hidden;
       transition: all 0.3s ease;
       border: 2px solid transparent;
-      position: relative;
     }
 
     .comic-card:hover {
@@ -249,21 +248,13 @@
 
     .comic-thumbnail {
       width: 100%;
-      height: 200px;
+      height: 150px;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
       font-size: 3em;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .comic-thumbnail img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
     }
 
     .comic-info {
@@ -286,14 +277,12 @@
     .comic-actions {
       display: flex;
       gap: 8px;
-      flex-wrap: wrap;
     }
 
     .comic-actions button {
       flex: 1;
       padding: 8px 12px;
-      font-size: 0.85em;
-      min-width: 70px;
+      font-size: 0.9em;
     }
 
     .btn-view {
@@ -312,16 +301,6 @@
 
     .btn-delete:hover {
       background: #ff5252;
-    }
-
-    .btn-thumbnail {
-      background: #4caf50;
-      color: white;
-      font-size: 0.8em;
-    }
-
-    .btn-thumbnail:hover {
-      background: #45a049;
     }
 
     .empty-state {
@@ -379,106 +358,6 @@
         opacity: 1;
       }
     }
-
-    /* 縮圖管理模態框 */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.7);
-      z-index: 2000;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .modal.active {
-      display: flex;
-    }
-
-    .modal-content {
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      max-width: 600px;
-      width: 90%;
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-    }
-
-    .modal-content h3 {
-      color: #667eea;
-      margin-bottom: 20px;
-      font-size: 1.3em;
-    }
-
-    .thumbnail-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: 10px;
-      margin: 15px 0;
-    }
-
-    .thumbnail-item {
-      position: relative;
-      border-radius: 6px;
-      overflow: hidden;
-      cursor: pointer;
-      border: 3px solid #eee;
-      transition: all 0.3s ease;
-    }
-
-    .thumbnail-item:hover {
-      border-color: #667eea;
-      transform: scale(1.05);
-    }
-
-    .thumbnail-item.selected {
-      border-color: #4caf50;
-      box-shadow: 0 0 0 2px #4caf50;
-    }
-
-    .thumbnail-item img {
-      width: 100%;
-      height: 140px;
-      object-fit: cover;
-      display: block;
-    }
-
-    .thumbnail-item-label {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      padding: 5px;
-      font-size: 0.8em;
-      text-align: center;
-    }
-
-    .modal-buttons {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-    }
-
-    .modal-buttons button {
-      flex: 1;
-      padding: 12px;
-    }
-
-    .close-modal {
-      background: #f0f0f0;
-      color: #333;
-    }
-
-    .close-modal:hover {
-      background: #e0e0e0;
-    }
   </style>
 </head>
 <body>
@@ -489,6 +368,7 @@
     </header>
 
     <div class="content">
+      <!-- 上傳區 -->
       <div class="card">
         <h2>📤 上傳漫畫</h2>
         <form id="uploadForm" enctype="multipart/form-data">
@@ -526,6 +406,7 @@
         </form>
       </div>
 
+      <!-- 統計資訊 -->
       <div class="card">
         <h2>📊 統計資訊</h2>
         <div class="stats">
@@ -538,16 +419,13 @@
             <div class="stat-label">總頁數</div>
           </div>
         </div>
-        <button class="btn-primary" id="rescanBtn" style="width: 100%; margin-top: 15px;">🔄 掃描現有漫畫</button>
         <div style="background: #fffbea; padding: 15px; border-radius: 6px; border-left: 4px solid #ffc107; margin-top: 15px;">
-          <p style="color: #856404; font-size: 0.9em;">💡 提示：點擊「掃描現有漫畫」掛載 uploads 資料夾中的漫畫。</p>
-        </div>        
-        <div style="background: #fffbea; padding: 15px; border-radius: 6px; border-left: 4px solid #ffc107; margin-top: 15px;">
-          <p style="color: #856404; font-size: 0.9em;">💡 提示：點擊漫畫的「設置縮圖」從頁面中選擇縮圖。</p>
+          <p style="color: #856404; font-size: 0.9em;">💡 提示：點擊漫畫卡片快速預覽，或使用刪除按鈕移除不需要的漫畫。</p>
         </div>
       </div>
     </div>
 
+    <!-- 漫畫列表 -->
     <div class="card">
       <h2>📖 漫畫列表</h2>
       <div id="comicListContainer">
@@ -559,25 +437,7 @@
     </div>
   </div>
 
-  <!-- 縮圖管理模態框 -->
-  <div class="modal" id="thumbnailModal">
-    <div class="modal-content">
-      <h3>📸 設置漫畫縮圖 - <span id="modalComicName"></span></h3>
-      <p style="color: #666; margin-bottom: 15px;">選擇漫畫中的一頁作為縮圖：</p>
-      <div class="thumbnail-grid" id="pageGrid"></div>
-      <div class="modal-buttons">
-        <button class="close-modal" onclick="closeThumbnailModal()">取消</button>
-        <button class="btn-primary" id="confirmThumbnailBtn" style="display: none;" onclick="confirmThumbnail()">確認</button>
-      </div>
-    </div>
-  </div>
-
   <script>
-    // ============ 狀態變數 ============
-    let selectedPageIndex = null;
-    let currentEditingComic = null;
-
-    // ============ 表單上傳 ============
     const form = document.getElementById('uploadForm');
     const imageInput = document.getElementById('imageInput');
     const uploadZone = document.getElementById('uploadZone');
@@ -591,14 +451,8 @@
     const totalPagesSpan = document.getElementById('totalPages');
     const uploadBtn = document.getElementById('uploadBtn');
     const resetBtn = document.getElementById('resetBtn');
-    const rescanBtn = document.getElementById('rescanBtn');
-    // ============ 縮圖模態框 ============
-    const thumbnailModal = document.getElementById('thumbnailModal');
-    const modalComicName = document.getElementById('modalComicName');
-    const pageGrid = document.getElementById('pageGrid');
-    const confirmThumbnailBtn = document.getElementById('confirmThumbnailBtn');
 
-    // ============ 拖拽上傳 ============
+    // 拖拽上傳
     uploadZone.addEventListener('dragover', (e) => {
       e.preventDefault();
       uploadZone.classList.add('dragover');
@@ -616,6 +470,7 @@
     });
 
     uploadZone.addEventListener('click', () => imageInput.click());
+
     imageInput.addEventListener('change', updatePreview);
 
     function updatePreview() {
@@ -627,7 +482,7 @@
       previewSection.style.display = 'block';
       previewGrid.innerHTML = '';
 
-      Array.from(imageInput.files).forEach((file) => {
+      Array.from(imageInput.files).forEach((file, index) => {
         const reader = new FileReader();
         reader.onload = (e) => {
           const div = document.createElement('div');
@@ -711,37 +566,22 @@
         uploadBtn.textContent = '上傳';
       }
     });
-    
-    // ============ 掃描現有漫畫 ============
-    rescanBtn.addEventListener('click', rescanComics);
 
-    async function rescanComics() {
-      rescanBtn.disabled = true;
-      rescanBtn.textContent = '掃描中...';
-
-      try {
-        const res = await fetch('/rescanComics', { method: 'POST' });
-        const msg = await res.json();
-        
-        showToast(msg.message, 'success');
-        await loadComics();
-      } catch (err) {
-        console.error(err);
-        showToast('掃描失敗', 'error');
-      } finally {
-        rescanBtn.disabled = false;
-        rescanBtn.textContent = '🔄 掃描現有漫畫';
-      }
-    }
-
-    // ============ 加載漫畫列表 ============
     async function loadComics() {
       try {
         const res = await fetch('/listComics');
         const comics = await res.json();
 
         totalComicsSpan.textContent = comics.length;
-        totalPagesSpan.textContent = comics.reduce((sum, c) => sum + c.pageCount, 0);
+
+        // 計算總頁數
+        let totalPages = 0;
+        for (const comic of comics) {
+          const comicData = await fetch(`/getComic/${encodeURIComponent(comic.name)}`);
+          const data = await comicData.json();
+          totalPages += data.pages.length;
+        }
+        totalPagesSpan.textContent = totalPages;
 
         if (comics.length === 0) {
           comicListContainer.innerHTML = `
@@ -757,28 +597,28 @@
         const comicGrid = document.createElement('div');
         comicGrid.className = 'comic-grid';
 
-        comics.forEach((comic) => {
+        for (const comic of comics) {
+          const comicData = await fetch(`/getComic/${encodeURIComponent(comic.name)}`);
+          const data = await comicData.json();
+          const pageCount = data.pages.length;
+
           const card = document.createElement('div');
           card.className = 'comic-card';
-          
-          const thumbnailHtml = comic.thumbnail 
-            ? `<img src="${comic.thumbnail}" alt="${escapeHtml(comic.name)}">`
-            : `📖 ${comic.pageCount}頁`;
-
           card.innerHTML = `
-            <div class="comic-thumbnail">${thumbnailHtml}</div>
+            <div class="comic-thumbnail">
+              📖 ${pageCount}頁
+            </div>
             <div class="comic-info">
               <div class="comic-name">${escapeHtml(comic.name)}</div>
-              <div class="comic-meta">${comic.pageCount} 頁</div>
+              <div class="comic-meta">${pageCount} 頁</div>
               <div class="comic-actions">
                 <button class="btn-view" onclick="viewComic('${encodeURIComponent(comic.name)}')">預覽</button>
-                <button class="btn-thumbnail" onclick="openThumbnailModal('${encodeURIComponent(comic.name)}')">設置縮圖</button>
                 <button class="btn-delete" onclick="deleteComic('${comic.name}')">刪除</button>
               </div>
             </div>
           `;
           comicGrid.appendChild(card);
-        });
+        }
 
         comicListContainer.appendChild(comicGrid);
       } catch (err) {
@@ -787,89 +627,6 @@
       }
     }
 
-    // ============ 縮圖管理 ============
-    async function openThumbnailModal(encodedComicName) {
-      const comicName = decodeURIComponent(encodedComicName);
-      currentEditingComic = comicName;
-      selectedPageIndex = null;
-
-      modalComicName.textContent = comicName;
-      confirmThumbnailBtn.style.display = 'none';
-
-      try {
-        // 獲取漫畫頁面
-        const res = await fetch(`/getComic/${encodedComicName}`);
-        const data = await res.json();
-
-        pageGrid.innerHTML = '';
-        data.pages.forEach((page, index) => {
-          const div = document.createElement('div');
-          div.className = 'thumbnail-item';
-          div.innerHTML = `
-            <img src="${page}" alt="第 ${index + 1} 頁">
-            <div class="thumbnail-item-label">第 ${index + 1} 頁</div>
-          `;
-          div.addEventListener('click', () => selectPage(index, div));
-          pageGrid.appendChild(div);
-        });
-
-        thumbnailModal.classList.add('active');
-      } catch (err) {
-        console.error(err);
-        showToast('無法加載漫畫頁面', 'error');
-      }
-    }
-
-    function selectPage(index, element) {
-      // 移除之前的選擇
-      document.querySelectorAll('.thumbnail-item').forEach(item => {
-        item.classList.remove('selected');
-      });
-      
-      selectedPageIndex = index;
-      element.classList.add('selected');
-      confirmThumbnailBtn.style.display = 'block';
-    }
-
-    async function confirmThumbnail() {
-      if (!currentEditingComic || selectedPageIndex === null) return;
-
-      confirmThumbnailBtn.disabled = true;
-      confirmThumbnailBtn.textContent = '處理中...';
-
-      try {
-        const res = await fetch(`/setThumbnailPage/${encodeURIComponent(currentEditingComic)}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pageIndex: selectedPageIndex })
-        });
-
-        if (!res.ok) throw new Error('設置失敗');
-        showToast('縮圖已更新！', 'success');
-
-        closeThumbnailModal();
-        await loadComics();
-      } catch (err) {
-        console.error(err);
-        showToast('操作失敗', 'error');
-      } finally {
-        confirmThumbnailBtn.disabled = false;
-        confirmThumbnailBtn.textContent = '確認';
-      }
-    }
-
-    function closeThumbnailModal() {
-      thumbnailModal.classList.remove('active');
-      selectedPageIndex = null;
-      currentEditingComic = null;
-    }
-    // ============ 重新掃描漫畫 ============
-    async function rescanComics() {
-      const res = await fetch('/rescanComics', { method: 'POST' });
-      const msg = await res.json();
-      alert(msg.message);
-    }
-    // ============ 其他功能 ============
     function viewComic(encodedName) {
       window.open(`/viewer.html?name=${encodedName}`, '_blank');
     }
@@ -912,13 +669,6 @@
         setTimeout(() => toast.remove(), 300);
       }, 3000);
     }
-
-    // 關閉模態框（點擊外部）
-    thumbnailModal.addEventListener('click', (e) => {
-      if (e.target === thumbnailModal) {
-        closeThumbnailModal();
-      }
-    });
 
     loadComics();
   </script>
