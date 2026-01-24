@@ -3,7 +3,7 @@ name: Release Automation
 on:
   push:
     tags:
-      - 'v1.0.0'
+      - 'test'
 
 jobs:
   build-and-release:
@@ -12,27 +12,27 @@ jobs:
     steps:
 
       # 取出程式碼與所有 tag
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      #- name: Checkout code
+      #  uses: actions/checkout@v4
+      #  with:
+      #    fetch-depth: 0
 
       # 安裝 Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18.x'
+      #- name: Setup Node.js
+      #  uses: actions/setup-node@v3
+      #  with:
+      #    node-version: '18.x'
 
       # Install dependencies
-      - name: Install dependencies
-        run: npm ci
+      #- name: Install dependencies
+      #  run: npm ci
 
       # Optional：執行測試或 build
-      - name: Run tests
-        run: npm test
+      #- name: Run tests
+      #  run: npm test
 
-      - name: Build
-        run: npm run build
+      #- name: Build
+      #  run: npm run build
 
       # Create GitHub Release
       - name: Create Release
