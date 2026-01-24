@@ -21,12 +21,12 @@ jobs:
 
     - name: Install Dependencies
       run: npm install
-      working-directory: ~/MangaManager/personal/server #./server
+      working-directory: /home/josh/MangaManager/personal/server #./server
 
     - name: Run Lint
       run: npm run lint
-      working-directory: ~/MangaManager/personal/server #./server
+      working-directory: /home/josh/MangaManager/personal/server #./server
 
     - name: Run Tests
       run: npm test
-      working-directory: ~/MangaManager/personal/server #./server
+      working-directory: /home/josh/MangaManager/personal/server #./server
