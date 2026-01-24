@@ -21,11 +21,11 @@ jobs:
 
     - name: Install Dependencies
       run: npm install
-      working-directory: ./server
+      #working-directory: ./server
 
     - name: Run Lint
       run: npm run lint
-      working-directory: ./server
+      #working-directory: ./server
 
     - name: Run Tests
       run: npm test
