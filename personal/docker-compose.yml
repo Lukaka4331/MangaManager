@@ -18,7 +18,7 @@ services:
       retries: 5
 
   server:
-    build: ./server
+    build: ~/MangaManager/personal/server #./server
     container_name: comic-server
     restart: unless-stopped
     ports:
@@ -27,8 +27,8 @@ services:
       mongo:
         condition: service_healthy
     volumes:
-      # - ./uploads:/app/uploads
-      - /mnt/d/Personal Document/personal-test/uploads/:/app/uploads
+      - ./uploads:/app/uploads
+      #- /mnt/d/Personal Document/personal-test/uploads/:/app/uploads
     networks:
       - comic-network
     environment:
