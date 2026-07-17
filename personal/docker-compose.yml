@@ -27,8 +27,10 @@ services:
       mongo:
         condition: service_healthy
     volumes:
-      - ./uploads:/app/uploads
+      #- ./uploads:/app/uploads
       #- /mnt/d/Personal Document/personal-test/uploads/:/app/uploads
+      #- /mnt/d/Personal Document/Comic/database/:/app/uploads
+      - /mnt/d/data_download/JP_Comic/:/app/uploads
     networks:
       - comic-network
     environment:

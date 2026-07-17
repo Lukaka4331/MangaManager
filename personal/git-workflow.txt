@@ -1,0 +1,7 @@
+git config user.email "qe54089718@gmail.com"
+git config user.name "Lukaka4331"
+git checkout develop
+git branch
+git add .
+git commit -m "chore: add release.yml"
+git push

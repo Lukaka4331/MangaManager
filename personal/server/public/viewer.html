@@ -2,68 +2,336 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>漫畫瀏覽器</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>漫畫閱讀器</title>
   <style>
+    :root {
+      --bg-color: #0d0d10;
+      --card-bg: #16161a;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-color: #3b82f6; 
+      --nav-bg: rgba(20, 20, 25, 0.9);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
-      font-family: sans-serif;
-      text-align: center;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
     }
-    .page-container {
-      margin-bottom: 20px;
+
+    /* 頂部固定導覽列 */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      min-height: 60px; /* 改用 min-height，允許長標題換行時撐開導覽列 */
+      background: var(--nav-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      z-index: 100;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      transition: transform 0.3s ease;
     }
-    img {
-      max-width: 90%;
-      margin: 10px 0;
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1; /* 讓左側區塊自動伸縮 */
+      margin-right: 16px; /* 與右側頁碼保持安全距離 */
     }
-    .page-label {
-      font-size: 16px;
-      color: #555;
+
+    .back-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      border-radius: 50%;
+      flex-shrink: 0; /* 防止按鈕被長標題擠壓變形 */
+      transition: background 0.2s;
+    }
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* 完整漫畫名稱樣式 */
+    .comic-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      line-height: 1.4;
+      word-break: break-all; /* 允許在任何地方斷行，防止超長英文/數字撐破排版 */
+    }
+
+    .page-indicator {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.08);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0; /* 防止頁碼被擠壓 */
+    }
+
+    /* 頂部滾動進度條 */
+    .progress-container {
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--accent-color);
+      transition: width 0.1s ease;
+    }
+
+    /* 主容器 */
+    .viewer-container {
+      max-width: 800px;
+      margin: 90px auto 40px auto; /* 稍微增加頂部間距，預留給可能換行的導覽列 */
+      padding: 0 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .page-wrapper {
+      width: 100%;
+      position: relative;
+      margin-bottom: 8px;
+      background: var(--card-bg);
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 400px;
+    }
+
+    .skeleton {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, #16161a 25%, #222227 50%, #16161a 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+    }
+
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .comic-img {
+      width: 100%;
+      height: auto;
+      display: block;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      z-index: 2;
+    }
+
+    .comic-img.loaded {
+      opacity: 1;
+    }
+
+    .status-message {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      color: var(--text-muted);
+      gap: 16px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      border-top-color: var(--accent-color);
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error-btn {
+      background: var(--accent-color);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+
+    .error-btn:hover {
+      opacity: 0.9;
     }
   </style>
 </head>
 <body>
-  <h2 id="comicTitle">漫畫</h2>
-  <div id="pages">載入中...</div>
+
+  <header class="navbar" id="navbar">
+    <div class="nav-left">
+      <button class="back-btn" onclick="history.back()" title="返回">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      </button>
+      <!-- 移除 max-width 與 ellipsis 限制，允許完整呈現 -->
+      <span class="comic-title" id="comicTitle">載入中...</span>
+    </div>
+    <div class="page-indicator" id="pageIndicator">- / -</div>
+    
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+  </header>
+
+  <main class="viewer-container" id="pages">
+    <div class="status-message">
+      <div class="spinner"></div>
+      <p>正在努力加載漫畫，請稍候...</p>
+    </div>
+  </main>
 
   <script>
     const params = new URLSearchParams(window.location.search);
-    const name = params.get('name');
-    document.getElementById('comicTitle').textContent = name;
+    const name = params.get('name') || '未命名漫畫';
+    const comicTitleEl = document.getElementById('comicTitle');
+    const container = document.getElementById('pages');
+    const pageIndicator = document.getElementById('pageIndicator');
+    const progressBar = document.getElementById('progressBar');
+    
+    comicTitleEl.textContent = name;
 
     fetch(`/getComic/${encodeURIComponent(name)}`)
       .then(res => {
-        if (!res.ok) throw new Error('fetch failed');
+        if (!res.ok) throw new Error('無法取得漫畫資料');
         return res.json();
       })
       .then(data => {
-        const container = document.getElementById('pages');
-        container.innerHTML = '';
-
         if (!data.pages || data.pages.length === 0) {
-          container.innerHTML = '<p>這本漫畫沒有任何圖片。</p>';
+          showError('這本漫畫目前沒有任何頁面。');
           return;
         }
-
-        data.pages.forEach((url, index) => {
-          const div = document.createElement('div');
-          div.className = 'page-container';
-
-          const img = document.createElement('img');
-          img.src = url;
-
-          const label = document.createElement('div');
-          label.className = 'page-label';
-          label.textContent = `${index + 1} / ${data.pages.length}`;
-
-          div.appendChild(img);
-          div.appendChild(label);
-          container.appendChild(div);
-        });
+        renderPages(data.pages);
       })
       .catch(err => {
         console.error('載入錯誤:', err);
-        document.getElementById('pages').innerHTML = '<p>載入失敗，請稍後再試。</p>';
+        showError('載入失敗，請檢查網路連線或稍後再試。');
       });
+
+    function renderPages(pages) {
+      container.innerHTML = '';
+      const totalPages = pages.length;
+      updateIndicator(1, totalPages);
+
+      pages.forEach((url, index) => {
+        const pageNum = index + 1;
+        
+        const wrapper = document.createElement('div');
+        wrapper.className = 'page-wrapper';
+        wrapper.dataset.page = pageNum;
+
+        const skeleton = document.createElement('div');
+        skeleton.className = 'skeleton';
+
+        const img = document.createElement('img');
+        img.className = 'comic-img';
+        img.alt = `第 ${pageNum} 頁`;
+        img.loading = 'lazy'; 
+        img.src = url;
+
+        img.onload = () => {
+          img.classList.add('loaded');
+          skeleton.remove();
+          wrapper.style.minHeight = 'auto';
+        };
+
+        wrapper.appendChild(skeleton);
+        wrapper.appendChild(img);
+        container.appendChild(wrapper);
+      });
+
+      initScrollTracking(totalPages);
+    }
+
+    function showError(message) {
+      container.innerHTML = `
+        <div class="status-message">
+          <p>${message}</p>
+          <button class="error-btn" onclick="window.location.reload()">重新嘗試</button>
+        </div>
+      `;
+    }
+
+    function updateIndicator(current, total) {
+      pageIndicator.textContent = `${current} / ${total}`;
+      const percentage = (current / total) * 100;
+      progressBar.style.width = `${percentage}%`;
+    }
+
+    function initScrollTracking(total) {
+      const wrappers = document.querySelectorAll('.page-wrapper');
+      
+      const observerOptions = {
+        root: null,
+        rootMargin: '-20% 0px -60% 0px',
+        threshold: 0
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const currentPage = parseInt(entry.target.dataset.page, 10);
+            updateIndicator(currentPage, total);
+          }
+        });
+      }, observerOptions);
+
+      wrappers.forEach(wrapper => observer.observe(wrapper));
+    }
+
+    let lastScrollY = window.scrollY;
+    const navbar = document.getElementById('navbar');
+    
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > lastScrollY && window.scrollY > 150) {
+        navbar.style.transform = 'translateY(-100%)'; 
+      } else {
+        navbar.style.transform = 'translateY(0)'; 
+      }
+      lastScrollY = window.scrollY;
+    });
   </script>
 </body>
 </html>
