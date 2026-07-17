@@ -29,6 +29,7 @@ services:
     volumes:
       - ./uploads:/app/uploads
       #- /mnt/d/Personal Document/personal-test/uploads/:/app/uploads
+      - /mnt/d/Personal Document/Comic/database/:/app/uploads
     networks:
       - comic-network
     environment:
