@@ -1,5 +1,5 @@
 # 使用官方 Node.js 映像檔
-FROM node:16
+FROM node:20
 
 # 設定工作目錄
 WORKDIR /app
