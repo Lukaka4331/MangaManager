@@ -1103,7 +1103,7 @@
             </div>
           `;
           card.querySelector('.comic-category-select').addEventListener('change', event => {
-            changeComicCategory(encodeURIComponent(comic.name), event.target.value);
+            changeComicCategory(comic.id, event.target.value);
           });
           comicGrid.appendChild(card);
         });
@@ -1148,9 +1148,9 @@
       }
     }
 
-    async function changeComicCategory(encodedComicName, categoryId) {
+    async function changeComicCategory(comicId, categoryId) {
       try {
-        const res = await fetch(`/comics/${encodedComicName}/category`, {
+        const res = await fetch(`/comics/${comicId}/category`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ categoryId })

@@ -207,10 +207,15 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const comicName = req.body.name;
     if (!comicName) return cb(new Error('漫畫名稱必須提供'), null);
-    const safeName = sanitizeName(comicName);
-    const uploadPath = path.join(__dirname, 'uploads', safeName);
-    fs.mkdirSync(uploadPath, { recursive: true });
-    cb(null, uploadPath);
+
+    if (!req.uploadPath) {
+      const safeName = sanitizeName(comicName);
+      req.uploadPath = path.join(__dirname, 'uploads', safeName);
+      req.uploadDirectoryExisted = fs.existsSync(req.uploadPath);
+      fs.mkdirSync(req.uploadPath, { recursive: true });
+    }
+
+    cb(null, req.uploadPath);
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + path.extname(file.originalname));
@@ -219,14 +224,34 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+function cleanupUploadedFiles(req) {
+  for (const file of req.files || []) {
+    try {
+      if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+    } catch (err) {
+      console.error(`無法清理上傳檔案 ${file.path}:`, err);
+    }
+  }
+
+  try {
+    if (!req.uploadDirectoryExisted && req.uploadPath && fs.existsSync(req.uploadPath)) {
+      if (fs.readdirSync(req.uploadPath).length === 0) fs.rmdirSync(req.uploadPath);
+    }
+  } catch (err) {
+    console.error(`無法清理上傳目錄 ${req.uploadPath}:`, err);
+  }
+}
+
 app.post('/uploadComic', upload.array('images'), async (req, res) => {
   try {
     const { name, categoryId } = req.body;
     if (!name) return res.status(400).json({ message: '漫畫名稱為必填欄位' });
     if (categoryId && !isValidCategoryId(categoryId)) {
+      cleanupUploadedFiles(req);
       return res.status(400).json({ message: '分類 ID 無效' });
     }
     if (categoryId && !await Category.exists({ _id: categoryId })) {
+      cleanupUploadedFiles(req);
       return res.status(400).json({ message: '找不到指定分類' });
     }
 
@@ -245,6 +270,7 @@ app.post('/uploadComic', upload.array('images'), async (req, res) => {
     res.status(201).json({ message: '漫畫上傳成功' });
   } catch (err) {
     console.error(err);
+    cleanupUploadedFiles(req);
     res.status(500).json({ message: '上傳漫畫失敗' });
   }
 });
@@ -268,6 +294,7 @@ app.get('/listComics', async (req, res) => {
         : (comic.pages.length > 0 ? `/uploads/${comic.folder}/${comic.pages[0]}` : null);
       
       return {
+        id: comic._id.toString(),
         name: comic.name,
         thumbnail: thumbnailUrl,
         pageCount: comic.pages.length,
@@ -284,8 +311,7 @@ app.get('/listComics', async (req, res) => {
   }
 });
 
-app.patch('/comics/:name/category', async (req, res) => {
-  const comicName = decodeURIComponent(req.params.name);
+app.patch('/comics/:id/category', async (req, res) => {
   const { categoryId } = req.body;
 
   try {
@@ -296,8 +322,12 @@ app.patch('/comics/:name/category', async (req, res) => {
       return res.status(400).json({ message: '找不到指定分類' });
     }
 
-    const comic = await Comic.findOneAndUpdate(
-      { name: comicName },
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: '漫畫 ID 無效' });
+    }
+
+    const comic = await Comic.findByIdAndUpdate(
+      req.params.id,
       { categoryId: categoryId || null },
       { new: true }
     );
