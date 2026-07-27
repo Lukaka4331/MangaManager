@@ -122,65 +122,6 @@
       gap: 8px;
     }
 
-    .category-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .category-header h2 { margin-bottom: 0; }
-
-    .category-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 14px;
-    }
-
-    .category-card {
-      position: relative;
-      display: flex;
-      min-height: 118px;
-      padding: 20px;
-      align-items: flex-start;
-      flex-direction: column;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      border-color: var(--border-color);
-      background: rgba(255, 255, 255, 0.025);
-      color: var(--text-primary);
-      cursor: pointer;
-      transition: var(--transition-smooth);
-    }
-
-    .category-card:hover {
-      border-color: var(--accent-color);
-      background: rgba(99, 102, 241, 0.1);
-      transform: translateY(-2px);
-    }
-
-    .category-card-name { font-size: 1.1rem; font-weight: 600; }
-    .category-card-count { color: var(--text-secondary); font-size: 0.8rem; }
-    .back-category-btn { padding: 7px 11px; font-size: 0.8rem; }
-
-    .category-delete-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      padding: 5px 8px;
-      font-size: 0.72rem;
-      color: #fca5a5;
-      border-color: rgba(239, 68, 68, 0.3);
-      background: rgba(239, 68, 68, 0.08);
-    }
-
-    .category-delete-btn:hover {
-      color: #fff;
-      border-color: var(--danger-color);
-      background: var(--danger-color);
-    }
-
     /* ============ 精緻化輸入欄位 ============ */
     .form-group {
       margin-bottom: 18px;
@@ -211,22 +152,6 @@
     input[type="text"]:focus {
       border-color: var(--accent-color);
       background: rgba(255, 255, 255, 0.05);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-    }
-
-    select {
-      width: 100%;
-      padding: 11px 14px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      color: var(--text-primary);
-      font-size: 0.9rem;
-      font-family: inherit;
-    }
-
-    select:focus {
-      border-color: var(--accent-color);
       box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
     }
 
@@ -669,33 +594,6 @@
       </div>
     </header>
 
-    <!-- 首頁：先選擇分類，再瀏覽該分類的漫畫 -->
-    <div class="card" style="margin-bottom: 20px;">
-      <div id="categoryView">
-        <div class="category-header">
-          <h2>選擇想看的漫畫類別</h2>
-          <button type="button" class="btn-secondary" id="createCategoryBtn">＋ 建立分類</button>
-        </div>
-        <div id="categoryGrid" class="category-grid"></div>
-      </div>
-
-      <div id="comicView" hidden>
-        <div class="category-header">
-          <div>
-            <button type="button" class="btn-secondary back-category-btn" id="backToCategoriesBtn">← 所有分類</button>
-            <h2 id="comicListTitle" style="margin-top: 14px;">漫畫</h2>
-          </div>
-          <button type="button" class="btn-primary" id="uploadToCategoryBtn">匯入至此分類</button>
-        </div>
-        <div id="comicListContainer">
-          <div class="empty-state">
-            <div class="empty-state-icon">📂</div>
-            <p>請先選擇漫畫分類。</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div class="content">
       <!-- 左側：上傳區塊 -->
       <div class="card">
@@ -704,13 +602,6 @@
           <div class="form-group">
             <label for="comicName">漫畫名稱</label>
             <input type="text" id="comicName" name="name" placeholder="請輸入漫畫名稱..." required autocomplete="off">
-          </div>
-
-          <div class="form-group">
-            <label for="comicCategory">漫畫分類</label>
-            <select id="comicCategory" name="categoryId">
-              <option value="">未分類</option>
-            </select>
           </div>
 
           <div class="form-group">
@@ -780,6 +671,16 @@
       </div>
     </div>
 
+    <!-- 下方：漫畫列表 -->
+    <div class="card" style="margin-top: 20px;">
+      <h2>現有庫存</h2>
+      <div id="comicListContainer">
+        <div class="empty-state">
+          <div class="empty-state-icon">📂</div>
+          <p>目前庫存為空，請由上方上傳或點擊掃描。</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 縮圖管理模態框 -->
@@ -801,8 +702,6 @@
   <script>
     let selectedPageIndex = null;
     let currentEditingComic = null;
-    let currentCategory = null;
-    let categories = [];
 
     const form = document.getElementById('uploadForm');
     const imageInput = document.getElementById('imageInput');
@@ -822,14 +721,6 @@
     const modalComicName = document.getElementById('modalComicName');
     const pageGrid = document.getElementById('pageGrid');
     const confirmThumbnailBtn = document.getElementById('confirmThumbnailBtn');
-    const comicCategorySelect = document.getElementById('comicCategory');
-    const categoryView = document.getElementById('categoryView');
-    const comicView = document.getElementById('comicView');
-    const categoryGrid = document.getElementById('categoryGrid');
-    const comicListTitle = document.getElementById('comicListTitle');
-    const createCategoryBtn = document.getElementById('createCategoryBtn');
-    const backToCategoriesBtn = document.getElementById('backToCategoriesBtn');
-    const uploadToCategoryBtn = document.getElementById('uploadToCategoryBtn');
 
     // 拖拽
     uploadZone.addEventListener('dragover', (e) => {
@@ -850,14 +741,6 @@
 
     uploadZone.addEventListener('click', () => imageInput.click());
     imageInput.addEventListener('change', updatePreview);
-
-    createCategoryBtn.addEventListener('click', createCategory);
-    backToCategoriesBtn.addEventListener('click', showCategories);
-    uploadToCategoryBtn.addEventListener('click', () => {
-      comicCategorySelect.value = currentCategory.id === 'uncategorized' ? '' : currentCategory.id;
-      document.getElementById('comicName').focus();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
 
     function updatePreview() {
       if (imageInput.files.length === 0) {
@@ -928,8 +811,7 @@
             progressContainer.style.display = 'none';
             progressFill.style.width = '0%';
             progressPercent.textContent = '0';
-            await loadCategories();
-            if (currentCategory) await loadComics(currentCategory);
+            await loadComics();
           } else {
             const res = JSON.parse(xhr.responseText);
             showToast(res.message || '上傳失敗', 'error');
@@ -965,8 +847,7 @@
         const msg = await res.json();
         
         showToast(msg.message, 'success');
-        await loadCategories();
-        if (currentCategory) await loadComics(currentCategory);
+        await loadComics();
       } catch (err) {
         console.error(err);
         showToast('掃描失敗', 'error');
@@ -976,95 +857,19 @@
       }
     }
 
-    async function loadCategories() {
+    async function loadComics() {
       try {
-        const [categoriesRes, comicsRes] = await Promise.all([
-          fetch('/categories'),
-          fetch('/listComics')
-        ]);
-        if (!categoriesRes.ok || !comicsRes.ok) throw new Error('載入分類失敗');
-
-        categories = await categoriesRes.json();
-        const allComics = await comicsRes.json();
-        totalComicsSpan.textContent = allComics.length;
-        totalPagesSpan.textContent = allComics.reduce((sum, comic) => sum + comic.pageCount, 0);
-
-        comicCategorySelect.innerHTML = '<option value="">未分類</option>';
-        categoryGrid.innerHTML = '';
-
-        categories.forEach(category => {
-          if (category.id !== 'uncategorized') {
-            const option = document.createElement('option');
-            option.value = category.id;
-            option.textContent = category.name;
-            comicCategorySelect.appendChild(option);
-          }
-
-          const card = document.createElement('div');
-          card.className = 'category-card';
-          card.tabIndex = 0;
-          card.setAttribute('role', 'button');
-          card.innerHTML = `
-            <span class="category-card-name">${escapeHtml(category.name)}</span>
-            <span class="category-card-count">${category.comicCount} 本漫畫</span>
-          `;
-          card.addEventListener('click', () => openCategory(category));
-          card.addEventListener('keydown', event => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              openCategory(category);
-            }
-          });
-
-          if (category.id !== 'uncategorized' && !['KOR', 'JP', '3D'].includes(category.name)) {
-            const deleteButton = document.createElement('button');
-            deleteButton.type = 'button';
-            deleteButton.className = 'category-delete-btn';
-            deleteButton.textContent = '刪除';
-            deleteButton.addEventListener('click', event => {
-              event.stopPropagation();
-              deleteCategory(category);
-            });
-            card.appendChild(deleteButton);
-          }
-
-          categoryGrid.appendChild(card);
-        });
-      } catch (err) {
-        console.error('載入分類失敗:', err);
-        categoryGrid.innerHTML = '<p style="color: #ef4444;">分類載入失敗，請重新整理頁面。</p>';
-      }
-    }
-
-    function openCategory(category) {
-      currentCategory = category;
-      categoryView.hidden = true;
-      comicView.hidden = false;
-      comicListTitle.textContent = `${category.name} 漫畫（${category.comicCount} 本）`;
-      uploadToCategoryBtn.textContent = category.id === 'uncategorized' ? '匯入未分類漫畫' : `匯入至 ${category.name}`;
-      loadComics(category);
-    }
-
-    function showCategories() {
-      currentCategory = null;
-      comicView.hidden = true;
-      categoryView.hidden = false;
-      loadCategories();
-    }
-
-    async function loadComics(category = currentCategory) {
-      if (!category) return;
-      try {
-        const res = await fetch(`/listComics?categoryId=${encodeURIComponent(category.id)}`);
-        if (!res.ok) throw new Error('載入漫畫失敗');
+        const res = await fetch('/listComics');
         const comics = await res.json();
-        comicListTitle.textContent = `${category.name} 漫畫（${comics.length} 本）`;
+
+        totalComicsSpan.textContent = comics.length;
+        totalPagesSpan.textContent = comics.reduce((sum, c) => sum + c.pageCount, 0);
 
         if (comics.length === 0) {
           comicListContainer.innerHTML = `
             <div class="empty-state">
               <div class="empty-state-icon">📂</div>
-              <p>${escapeHtml(category.name)} 目前沒有漫畫，請由上方匯入。</p>
+              <p>目前庫存為空，請由上方上傳或點擊掃描。</p>
             </div>
           `;
           return;
@@ -1082,29 +887,18 @@
             ? `<img src="${comic.thumbnail}" alt="${escapeHtml(comic.name)}">`
             : `<div style="font-size: 2rem; opacity: 0.3;">📖</div>`;
 
-          const categoryOptions = [
-            '<option value="">未分類</option>',
-            ...categories.filter(item => item.id !== 'uncategorized').map(item =>
-              `<option value="${item.id}" ${comic.category && comic.category.id === item.id ? 'selected' : ''}>${escapeHtml(item.name)}</option>`
-            )
-          ].join('');
-
           card.innerHTML = `
             <div class="comic-thumbnail">${thumbnailHtml}</div>
             <div class="comic-info">
               <div class="comic-name" title="${escapeHtml(comic.name)}">${escapeHtml(comic.name)}</div>
-              <div class="comic-meta">${comic.pageCount} 頁 · ${escapeHtml(comic.category ? comic.category.name : '未分類')}</div>
-              <select class="comic-category-select" aria-label="變更漫畫分類">${categoryOptions}</select>
+              <div class="comic-meta">${comic.pageCount} 頁</div>
               <div class="comic-actions">
                 <button class="btn-view" onclick="viewComic('${encodeURIComponent(comic.name)}')">預覽</button>
                 <button class="btn-thumbnail" onclick="openThumbnailModal('${encodeURIComponent(comic.name)}')">縮圖</button>
-                <button class="btn-delete" onclick="deleteComic('${encodeURIComponent(comic.name)}')">刪除書籍</button>
+                <button class="btn-delete" onclick="deleteComic('${comic.name}')">刪除書籍</button>
               </div>
             </div>
           `;
-          card.querySelector('.comic-category-select').addEventListener('change', event => {
-            changeComicCategory(comic.id, event.target.value);
-          });
           comicGrid.appendChild(card);
         });
 
@@ -1112,57 +906,6 @@
       } catch (err) {
         console.error('載入漫畫列表失敗:', err);
         comicListContainer.innerHTML = '<p style="color: #ef4444; text-align: center; padding: 20px;">資料庫連線失敗，請刷新重試。</p>';
-      }
-    }
-
-    async function createCategory() {
-      const name = prompt('請輸入新分類名稱：');
-      if (name === null || !name.trim()) return;
-
-      try {
-        const res = await fetch('/categories', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: name.trim() })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || '建立分類失敗');
-        showToast(`已建立「${data.name}」`, 'success');
-        await loadCategories();
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
-    }
-
-    async function deleteCategory(category) {
-      if (!confirm(`確定要刪除分類「${category.name}」？`)) return;
-
-      try {
-        const res = await fetch(`/categories/${category.id}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || '刪除分類失敗');
-        showToast(`已刪除「${category.name}」`, 'success');
-        await loadCategories();
-      } catch (err) {
-        showToast(err.message, 'error');
-      }
-    }
-
-    async function changeComicCategory(comicId, categoryId) {
-      try {
-        const res = await fetch(`/comics/${comicId}/category`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ categoryId })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || '更新分類失敗');
-        showToast('漫畫分類已更新', 'success');
-        await loadCategories();
-        if (currentCategory) await loadComics(currentCategory);
-      } catch (err) {
-        showToast(err.message, 'error');
-        if (currentCategory) await loadComics(currentCategory);
       }
     }
 
@@ -1247,20 +990,18 @@
       window.open(`/viewer.html?name=${encodedName}`, '_blank');
     }
 
-    async function deleteComic(encodedName) {
-      const name = decodeURIComponent(encodedName);
+    async function deleteComic(name) {
       if (!confirm(`確定要刪除漫畫 "${name}"？此操作無法撤銷。`)) {
         return;
       }
 
       try {
-        const res = await fetch(`/deleteComic/${encodedName}`, { method: 'DELETE' });
+        const res = await fetch(`/deleteComic/${encodeURIComponent(name)}`, { method: 'DELETE' });
         const msg = await res.json();
         
         if (res.ok) {
           showToast(`已刪除 "${name}"`, 'success');
-          await loadCategories();
-          if (currentCategory) await loadComics(currentCategory);
+          await loadComics();
         } else {
           showToast(msg.message || '刪除失敗', 'error');
         }
@@ -1300,7 +1041,7 @@
       }
     });
 
-    loadCategories();
+    loadComics();
   </script>
 </body>
 </html>

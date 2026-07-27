@@ -30,7 +30,8 @@ services:
       #- ./uploads:/app/uploads
       #- /mnt/d/Personal Document/personal-test/uploads/:/app/uploads
       #- /mnt/d/Personal Document/Comic/database/:/app/uploads
-      - /mnt/d/data_download/JP_Comic/:/app/uploads
+      #- /mnt/d/data_download/JP_Comic/:/app/uploads
+      - /mnt/e/Comic-JP/:/app/uploads
     networks:
       - comic-network
     environment:
