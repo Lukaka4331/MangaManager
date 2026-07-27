@@ -1,1 +1,97 @@
+# Service UP
 docker compose -f docker-compose.yml up -d
+# Mount External Disk (E:) 
+sudo mount -t drvfs E: /mnt/e
+# uMount External Disk (E:)
+sudo umount /mnt/e
+
+#如何架設vpn server讓外網透過vpn connect 來連線該服務?
+
+• 最簡單、穩定的作法是架設 WireGuard VPN，讓外部裝置先連進 VPN，再存取內網服務。
+
+  基本架構：
+
+  外部手機／電腦
+        │ WireGuard（UDP 51820）
+        ▼
+  VPN Server（家中主機或 VPS）
+        │
+        ▼
+  你的服務，例如 MangaManager: http://內網IP:PORT
+
+  重點是：服務不要直接公開到網際網路；只允許 VPN 網段連線。
+
+  1. 準備一台可被外網連到的 VPN Server
+      - 有公網 IP 的 VPS：最省事。
+      - 家中主機：路由器需設定 UDP 51820 port forwarding 到該主機，且網路必須有公網 IP。
+      - 若 ISP 是 CGNAT、不能轉發連接埠：建議用 VPS，或改用 Tailscale/ZeroTier。
+
+  2. 在 VPN Server 安裝 WireGuard
+
+  sudo apt update
+  sudo apt install wireguard
+
+  3. 設定伺服器 /etc/wireguard/wg0.conf
+
+  [Interface]
+  Address = 10.8.0.1/24
+  ListenPort = 51820
+  PrivateKey = <伺服器私鑰>
+
+  [Peer]
+  PublicKey = <用戶端公鑰>
+  AllowedIPs = 10.8.0.2/32
+
+  啟用：
+
+  sudo systemctl enable --now wg-quick@wg0
+
+  防火牆只開 VPN 埠：
+
+  sudo ufw allow 51820/udp
+
+  4. 用戶端設定範例
+
+  [Interface]
+  Address = 10.8.0.2/24
+  PrivateKey = <用戶端私鑰>
+
+  [Peer]
+  AllowedIPs = 10.8.0.0/24, 192.168.1.0/24
+  PersistentKeepalive = 25
+
+  其中 192.168.1.0/24 要換成服務所在的內網網段；若服務就跑在 VPN Server 本身，只需讓它能透過 10.8.0.1 存取。
+
+  5. 限制服務僅供 VPN 使用
+     例如你的 Node/Express 服務若目前監聽 0.0.0.0，可用防火牆限制服務埠只接受 WireGuard 網段：
+
+  sudo ufw allow from 10.8.0.0/24 to any port 你的服務埠號
+  sudo ufw deny 你的服務埠號
+
+  之後外部使用者連線 VPN 後，才能開：
+
+  http://10.8.0.1:服務埠號
+
+  若你的服務是在家中另一台機器，VPN Server 還需要開啟 IP forwarding 與設定路由/NAT。若你告訴我服務是跑在家
+  中、VPS、Docker，及目前的網路狀況（是否有公網 IP），我可以給你可直接套用的設定檔。
+
+
+› 內網是這個ip : http://127.0.0.1:3000
+
+
+
+  然後以 WireGuard VPN 網段限制 3000 埠，例如 VPN 是 10.8.0.0/24：
+
+  sudo ufw allow from 10.8.0.0/24 to any port 3000 proto tcp
+  sudo ufw deny 3000/tcp
+
+  連上 VPN 後，用 VPN Server 的 WireGuard IP 存取：
+
+  http://10.8.0.1:3000
+
+  注意：127.0.0.1 不是內網 IP；它永遠只指向目前那一台機器。你可以用以下方式找實際 LAN IP：
+
+  hostname -I
+
+  若想讓服務仍只監聽在 127.0.0.1，也可以透過 VPN Server 的反向代理轉發，但對你的情況，改監聽 0.0.0.0 再配防
+  火牆限制 VPN 網段通常最直接。
